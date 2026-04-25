@@ -1,0 +1,46 @@
+# ============================================================
+# Docker Compose — Jetson Orin Nano Super (JetPack 6.x)
+# ============================================================
+# Usage:
+#   docker compose -f docker-compose.jetson.yml up -d --build
+#
+# Prerequisites on the Jetson host:
+#   - JetPack 6.x installed
+#   - Docker with NVIDIA Container Runtime configured
+#     (sudo apt install nvidia-container-runtime)
+# ============================================================
+
+services:
+  upscaler:
+    build:
+      context: .
+      dockerfile: Dockerfile.jetson
+    container_name: image-upscaler-api
+    # Use NVIDIA runtime so CUDA is accessible inside the container
+    runtime: nvidia
+    ports:
+      - "8124:8000"
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
+    environment:
+      # Expose all GPU devices and CUDA/cuDNN capabilities to the container
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+
+      # Defaults optimised for Jetson Orin Nano Super:
+      #   GPU inference, FP16, zero CPU thread contention.
+      DEVICE: ${DEVICE:-cuda}
+      GPU_ID: ${GPU_ID:-0}
+      HALF_PRECISION: ${HALF_PRECISION:-true}
+      # Set to 0 when using GPU (let framework auto-manage CPU helper threads)
+      CPU_THREADS: ${CPU_THREADS:-0}
+      CPU_INTEROP_THREADS: ${CPU_INTEROP_THREADS:-0}
+      CV_THREADS: ${CV_THREADS:-0}
+      DEFAULT_TILE: ${DEFAULT_TILE:-0}
+      TILE_PAD: ${TILE_PAD:-10}
+      PRE_PAD: ${PRE_PAD:-0}
+      JPEG_QUALITY: ${JPEG_QUALITY:-95}
+      WEBP_QUALITY: ${WEBP_QUALITY:-95}
+      MODEL: ${MODEL:-RealESRGAN_x4plus.pth}

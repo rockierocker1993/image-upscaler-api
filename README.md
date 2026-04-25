@@ -12,14 +12,17 @@ A FastAPI service that upscales images using [Real-ESRGAN](https://github.com/xi
 ```
 image-upscaler-api/
 ├── app/
-│   └── main.py            # FastAPI application
+│   └── main.py                  # FastAPI application
 ├── model/
-│   └── RealESRGAN_x4plus.pth  # Model weights
-├── data/                  # Volume-mounted directory
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── .env.example           # Environment variable reference
+│   └── RealESRGAN_x4plus.pth    # Model weights
+├── data/                        # Volume-mounted directory
+├── Dockerfile                   # x86-64 (CPU / discrete GPU)
+├── Dockerfile.jetson            # aarch64 (Jetson Orin / JetPack 6.x)
+├── docker-compose.yml           # Standard (x86-64) compose
+├── docker-compose.jetson.yml    # Jetson compose
+├── requirements.txt             # x86-64 deps (CPU-only PyTorch)
+├── requirements.jetson.txt      # Jetson deps (torch excluded — in base image)
+├── .env.example                 # Environment variable reference
 ├── README.md
 └── HELME.md
 ```
@@ -138,7 +141,57 @@ HALF_PRECISION=true
 docker compose up -d --build
 ```
 
-> **Note:** The default `requirements.txt` installs CPU-only PyTorch wheels. For GPU support, replace the torch/torchvision lines with the appropriate CUDA wheels from [pytorch.org](https://pytorch.org/get-started/locally/).
+> **Note:** The default `requirements.txt` installs CPU-only PyTorch wheels. For GPU support on x86-64, replace the torch/torchvision lines with the appropriate CUDA wheels from [pytorch.org](https://pytorch.org/get-started/locally/).
+
+## Jetson Orin Nano Super (JetPack 6.x)
+
+The Jetson build uses a separate Dockerfile and compose file. No code changes are needed — the same `app/main.py` runs on Jetson.
+
+### Prerequisites on the Jetson host
+
+1. JetPack 6.x (tested on JetPack 6.0, r36.2.x).
+2. NVIDIA Container Runtime installed:
+
+```bash
+sudo apt install nvidia-container-runtime
+sudo systemctl restart docker
+```
+
+3. Verify Docker can access the GPU:
+
+```bash
+docker run --rm --runtime nvidia nvcr.io/nvidia/l4t-base:r36.2.0 nvidia-smi
+```
+
+### Quick Start (Jetson)
+
+```bash
+# 1. Copy the example environment file
+cp .env.example .env
+# (Jetson defaults are pre-configured in docker-compose.jetson.yml — .env is optional)
+
+# 2. Build and start with the Jetson compose file
+docker compose -f docker-compose.jetson.yml up -d --build
+
+# 3. Verify
+curl http://localhost:8124/health
+```
+
+### Jetson vs x86 file map
+
+| Concern | x86-64 | Jetson |
+|---------|--------|--------|
+| Compose file | `docker-compose.yml` | `docker-compose.jetson.yml` |
+| Dockerfile | `Dockerfile` | `Dockerfile.jetson` |
+| Requirements | `requirements.txt` | `requirements.jetson.txt` |
+| Default device | `cpu` | `cuda` |
+| PyTorch source | PyPI CPU wheels | Pre-installed in `l4t-pytorch` base image |
+
+### Notes
+
+- `Dockerfile.jetson` is based on `nvcr.io/nvidia/l4t-pytorch:r36.2.0-pth2.1-py3` (PyTorch 2.1 + CUDA 12.2 for aarch64). Do **not** install `torch` or `torchvision` via pip — this would overwrite the CUDA build with a CPU wheel.
+- The Jetson Orin Nano Super has 8 GB of unified RAM/VRAM. Set `DEFAULT_TILE=256` if you encounter out-of-memory errors with very large images.
+- `HALF_PRECISION=true` is safe and recommended on the Ampere architecture.
 
 ## Performance Notes
 

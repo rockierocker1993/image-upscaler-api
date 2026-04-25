@@ -1,0 +1,42 @@
+# ============================================================
+# Jetson Orin Nano Super / JetPack 6.x (aarch64 / CUDA 12.2)
+# ============================================================
+# Base image already contains:
+#   Python 3.10  |  PyTorch 2.1  |  torchvision 0.16  |  CUDA 12.2
+#
+# Do NOT reinstall torch / torchvision from PyPI — it would
+# overwrite the CUDA-enabled ARM64 build with a CPU-only wheel.
+#
+# To list available l4t-pytorch tags:
+#   https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-pytorch
+#
+# Tested with: r36.2.0-pth2.1-py3  (JetPack 6.0)
+#              r36.3.0-pth2.3-py3  (JetPack 6.1) — requires basicsr patch
+FROM nvcr.io/nvidia/l4t-pytorch:r36.2.0-pth2.1-py3
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# OpenCV runtime libs + build tools for any compiled Python extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libgomp1 \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.jetson.txt .
+
+RUN pip install --upgrade pip setuptools wheel
+
+RUN pip install --no-cache-dir --use-pep517 -r requirements.jetson.txt
+
+COPY app/main.py ./main.py
+COPY model ./model
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
