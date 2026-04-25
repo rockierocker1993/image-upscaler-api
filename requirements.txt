@@ -6,7 +6,7 @@ pillow==10.4.0
 numpy<2
 
 torch==2.6.0+cpu
-torchvision==0.21.0+cpu
+torchvision==0.21.0
 
 realesrgan==0.3.0
 opencv-python-headless
