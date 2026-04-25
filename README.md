@@ -177,6 +177,13 @@ docker compose -f docker-compose.jetson.yml up -d --build
 curl http://localhost:8124/health
 ```
 
+If your JetPack release uses a different tag, override the base image:
+
+```bash
+JETSON_BASE_IMAGE=nvcr.io/nvidia/l4t-ml:r36.4.0-py3 \
+docker compose -f docker-compose.jetson.yml up -d --build
+```
+
 ### Jetson vs x86 file map
 
 | Concern | x86-64 | Jetson |
@@ -189,7 +196,8 @@ curl http://localhost:8124/health
 
 ### Notes
 
-- `Dockerfile.jetson` is based on `nvcr.io/nvidia/l4t-pytorch:r36.2.0-pth2.1-py3` (PyTorch 2.1 + CUDA 12.2 for aarch64). Do **not** install `torch` or `torchvision` via pip — this would overwrite the CUDA build with a CPU wheel.
+- `Dockerfile.jetson` defaults to `nvcr.io/nvidia/l4t-ml:r36.2.0-py3` and supports override via `JETSON_BASE_IMAGE` for JetPack tag compatibility.
+- Do **not** install `torch` or `torchvision` via pip on Jetson — this can overwrite the JetPack-matched CUDA build with a CPU wheel.
 - The Jetson Orin Nano Super has 8 GB of unified RAM/VRAM. Set `DEFAULT_TILE=256` if you encounter out-of-memory errors with very large images.
 - `HALF_PRECISION=true` is safe and recommended on the Ampere architecture.
 

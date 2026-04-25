@@ -15,6 +15,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.jetson
+      args:
+        JETSON_BASE_IMAGE: ${JETSON_BASE_IMAGE:-nvcr.io/nvidia/l4t-ml:r36.2.0-py3}
     container_name: image-upscaler-api
     # Use NVIDIA runtime so CUDA is accessible inside the container
     runtime: nvidia

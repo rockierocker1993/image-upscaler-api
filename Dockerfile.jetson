@@ -1,18 +1,21 @@
 # ============================================================
 # Jetson Orin Nano Super / JetPack 6.x (aarch64 / CUDA 12.2)
 # ============================================================
-# Base image already contains:
-#   Python 3.10  |  PyTorch 2.1  |  torchvision 0.16  |  CUDA 12.2
+# Base image already contains CUDA and JetPack-matched userspace.
+# We use l4t-ml by default because its tags are generally more stable
+# across JetPack releases than l4t-pytorch tags.
 #
 # Do NOT reinstall torch / torchvision from PyPI — it would
 # overwrite the CUDA-enabled ARM64 build with a CPU-only wheel.
 #
-# To list available l4t-pytorch tags:
-#   https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-pytorch
+# To list available tags:
+#   https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-ml
 #
-# Tested with: r36.2.0-pth2.1-py3  (JetPack 6.0)
-#              r36.3.0-pth2.3-py3  (JetPack 6.1) — requires basicsr patch
-FROM nvcr.io/nvidia/l4t-pytorch:r36.2.0-pth2.1-py3
+# Override with:
+#   docker compose -f docker-compose.jetson.yml build \
+#     --build-arg JETSON_BASE_IMAGE=nvcr.io/nvidia/l4t-ml:r36.4.0-py3
+ARG JETSON_BASE_IMAGE=nvcr.io/nvidia/l4t-ml:r36.2.0-py3
+FROM ${JETSON_BASE_IMAGE}
 
 WORKDIR /app
 
